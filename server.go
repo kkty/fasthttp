@@ -182,6 +182,9 @@ type Server struct {
 	// DefaultConcurrency is used if not set.
 	Concurrency int
 
+	// The minimum number of workers ready to handle requests.
+	MinWorkersCount int
+
 	// Whether to disable keep-alive connections.
 	//
 	// The server will close all the incoming connections after sending
@@ -1577,6 +1580,7 @@ func (s *Server) Serve(ln net.Listener) error {
 	wp := &workerPool{
 		WorkerFunc:      s.serveConn,
 		MaxWorkersCount: maxWorkersCount,
+		MinWorkersCount: s.MinWorkersCount,
 		LogAllErrors:    s.LogAllErrors,
 		Logger:          s.logger(),
 		connState:       s.setState,

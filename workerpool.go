@@ -20,6 +20,8 @@ type workerPool struct {
 
 	MaxWorkersCount int
 
+	MinWorkersCount int
+
 	LogAllErrors bool
 
 	MaxIdleWorkerDuration time.Duration
@@ -50,6 +52,14 @@ func (wp *workerPool) Start() {
 	}
 	wp.stopCh = make(chan struct{})
 	stopCh := wp.stopCh
+
+	for i := 0; i < wp.MinWorkersCount; i++ {
+		ch := workerChan{
+			ch: make(chan net.Conn, workerChanCap),
+		}
+		wp.release(&ch)
+	}
+
 	go func() {
 		var scratch []*workerChan
 		for {
@@ -103,7 +113,7 @@ func (wp *workerPool) clean(scratch *[]*workerChan) {
 	ready := wp.ready
 	n := len(ready)
 	i := 0
-	for i < n && currentTime.Sub(ready[i].lastUseTime) > maxIdleWorkerDuration {
+	for i < n-wp.MinWorkersCount && currentTime.Sub(ready[i].lastUseTime) > maxIdleWorkerDuration {
 		i++
 	}
 	*scratch = append((*scratch)[:0], ready[:i]...)
